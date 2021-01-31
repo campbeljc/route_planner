@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd 
 import fiona
 import geopandas as gpd
+from shapely.geometry import LineString
 
 test_file = '/Users/jennacampbell/Desktop/export_42781014/activities/4583421417.gpx'
 test_dir = '/Users/jennacampbell/Desktop/export_42781014/activities'
@@ -24,8 +25,7 @@ def collect_data_from_gpx(fname):
     for entry in track_points:
         elevation = elevation + [entry['properties']['ele']]
     #unzip coordinate data
-    lon, lat = zip(*coordinates[0])
-    return time, lon, lat, activity, elevation
+    return time, coordinates[0], activity, elevation
 
 def calculate_total_elevation(elevation):
     total = 0
@@ -38,12 +38,13 @@ def calculate_total_elevation(elevation):
     return total*3.28
 
 def convert_file_to_series(fname):
-    time, lon, lat, activity, elevation_list = collect_data_from_gpx(fname)
+    time, coordinates, activity, elevation_list = collect_data_from_gpx(fname)
     elevation = calculate_total_elevation(elevation_list)
-    return pd.Series([time, lon, lat, activity, elevation,])
+    linestring = LineString(coordinates)
+    return pd.Series([activity, time, elevation, linestring], index=['activity','time','elevation','coordinates'])
 
 def create_df(dir_path):
-    df = pd.DataFrame([],columns=['activity','time','elevation','lon','lat'])
+    df = pd.DataFrame([],columns=['activity','time','elevation','coordinates'])
     count = 1
     for filename in os.listdir(dir_path):
         if filename.endswith(".gpx"):
@@ -54,9 +55,11 @@ def create_df(dir_path):
             count += 1
     return df
 
-df = create_df(test_dir)
-gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.lon, df.lat))
-gdf.crs = 'epsg:4326'
+#save file to be used in testing
+# df = create_df(test_dir)
+# gdf = gpd.GeoDataFrame(df, geometry=df['coordinates'])
+# gdf = gdf.drop(['coordinates'],axis=1)
+# gdf.crs = 'epsg:4326'
+# gdf.to_crs('epsg:4326') 
 
 # gdf.to_file('my_gdf.json', driver='GeoJSON')
-gdf.to_file("output.gpkg", driver="GPKG")

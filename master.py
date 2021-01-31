@@ -5,7 +5,7 @@ from tkinter import filedialog
 import sys
 import os
 
-from load_gpxfile import *
+from load_gpxfile import create_df
 
 ##Outline
 #Initializing
@@ -54,8 +54,14 @@ else:
     file_path = filedialog.askdirectory()
     file_path = os.path.join(file_path, "activities")
 
-test_file = '/Users/jennacampbell/Desktop/export_42781014/activities/4583421417.gpx'
-series = convert_file_to_series(test_file)
+if testing == "True":
+    gdf = gpd.read_file('my_gdf.json')
+else:
+    df = create_df(file_path)
+    gdf = gpd.GeoDataFrame(df, geometry=df['coordinates'])
+    gdf = gdf.drop(['coordinates'],axis=1)
+    gdf.crs = 'epsg:4326'
+    gdf.to_crs('epsg:4326') 
 
 #If predicting, create model that learns based on your data.
 #Variables: day of week, time of day, time of year
