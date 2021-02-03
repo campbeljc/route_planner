@@ -9,7 +9,7 @@ import geopandas as gpd
 from shapely.geometry import LineString
 
 test_file = '/Users/jennacampbell/Desktop/export_42781014/activities/4583421417.gpx'
-test_dir = '/Users/jennacampbell/Desktop/export_42781014/activities'
+test_dir = '/Users/jennacampbell/Desktop/export_42781014_copy/activities'
 
 def collect_data_from_gpx(fname):
     #selects gpx layer containing time variable and extract time
@@ -55,11 +55,11 @@ def create_df(dir_path):
             count += 1
     return df
 
-#save file to be used in testing
-# df = create_df(test_dir)
-# gdf = gpd.GeoDataFrame(df, geometry=df['coordinates'])
-# gdf = gdf.drop(['coordinates'],axis=1)
-# gdf.crs = 'epsg:4326'
-# gdf.to_crs('epsg:4326') 
+# save file to be used in testing
+df = create_df(test_dir)
+gdf = gpd.GeoDataFrame(df, geometry=df['coordinates'])
+gdf = gdf.drop(['coordinates'],axis=1)
+gdf.crs = 'epsg:4326'
+gdf.to_crs('epsg:5070') 
 
-# gdf.to_file('my_gdf.json', driver='GeoJSON')
+gdf.to_file('test_file.json', driver='GeoJSON')

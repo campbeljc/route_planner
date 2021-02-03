@@ -6,6 +6,7 @@ import sys
 import os
 
 from load_gpxfile import create_df
+from predict_route import predict_route
 
 ##Outline
 #Initializing
@@ -61,11 +62,15 @@ else:
     gdf = gpd.GeoDataFrame(df, geometry=df['coordinates'])
     gdf = gdf.drop(['coordinates'],axis=1)
     gdf.crs = 'epsg:4326'
-    gdf.to_crs('epsg:4326') 
+    gdf.to_crs('epsg:5070') 
+
+gdf['distance'] = gdf['geometry'].length
 
 #If predicting, create model that learns based on your data.
 #Variables: day of week, time of day, time of year
 #Output: type/length/elevation
+
+# predict_route(gdf)
 
 #Find random route that matches type, length and elevation +/- 10%
 
