@@ -6,7 +6,7 @@ import sys
 import os
 
 from load_gpxfile import create_df
-from predict_route import create_model, hot_encode, analyze_activitymodel, create_metrics_model, get_error(
+from predict_route import create_model, hot_encode, analyze_activitymodel, create_metrics_model, get_error
 
 ##Outline
 #Initializing
@@ -20,6 +20,7 @@ if testing == "True":
     activity = "Bike"
     distance = 30
     elevation = 2000
+    predict = 'yes'
 else:
     distance = np.nan
     activity = np.nan
@@ -56,29 +57,38 @@ else:
     file_path = os.path.join(file_path, "activities")
 
 if testing == "True":
-    gdf = gpd.read_file('my_gdf.json')
+    gdf = gpd.read_file('test_file.json')
 else:
     #Create GeoDataFrame out of DataFrame
     df = create_df(file_path)
+
     gdf = gpd.GeoDataFrame(df, crs='epsg:4326', geometry=df['coordinates'])
     gdf = gdf.drop(['coordinates'],axis=1)
     gdf = gdf.to_crs('epsg:5070') 
     gdf.crs = 'epsg:5070'
     #Add distance column and adjust activities to only include biking and running
-    gdf['distance'] = gdf['geometry'].length
-    gdf = gdf[(gdf['activity'] == 1) & (gdf['activity'] == 0)]
 
+gdf['distance'] = gdf['geometry'].length
+gdf = gdf[(gdf['activity'] == "1") | (gdf['activity'] == "9")]
 
 #If predicting, create model that learns based on your data.
 #Variables: day of week, time of day, time of year
 #Output: type/length/elevation
 
-encoded_data = hot_encode(df)
-model, X_test, y_test, cross_val = create_model(encoded_data)
-proportion_error, matrix, f1  = analyze_activitymodel(model, X_test, y_test)
+if predict == 'yes' or predict == 'Yes':
+    #convert datetime data to numerical data
+    encoded_data = hot_encode(gdf)
+    #create model to predict type of activity
+    model, X_test, y_test, cross_val = create_model(encoded_data)
+    proportion_error, matrix, f1  = analyze_activitymodel(model, X_test, y_test)
 
-model_met, X_test_met, y_test_met, cross_val_met = create_metrics_model(encoded_data)
-actual_results_met, predicted_results_met, error_met= get_error(model_met, X_test_met, y_test_met)
+    #create model to predict distance and elevation
+    model_met, X_test_met, y_test_met, cross_val_met = create_metrics_model(encoded_data)
+    actual_results_met, predicted_results_met, error_met= get_error(model_met, X_test_met, y_test_met)
+
+    #get current time and create dataframe in same format as gdf to be inserted into hot_encode
+    #predict activity using created df with model
+    #predict metrics using same data with model_met
 
 
 #Find random route that matches type, length and elevation +/- 10%
