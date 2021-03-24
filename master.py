@@ -1,12 +1,14 @@
 import numpy as np 
 import geopandas as gpd 
+import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
 import sys
 import os
+import datetime
 
 from load_gpxfile import create_df
-from predict_route import create_model, hot_encode, analyze_activitymodel, create_metrics_model, get_error
+from predict_route import create_model, hot_encode, analyze_activitymodel, create_metrics_model, get_error, split_time, add_all_daysmonths, add_all_activities
 
 ##Outline
 #Initializing
@@ -77,18 +79,53 @@ gdf = gdf[(gdf['activity'] == "1") | (gdf['activity'] == "9")]
 
 if predict == 'yes' or predict == 'Yes':
     #convert datetime data to numerical data
-    encoded_data = hot_encode(gdf)
+    df_time = split_time(gdf)
+
+    #add all possible days/months
+    df_all = add_all_daysmonths(df_time)
+    
+    encoded_data = hot_encode(df_all)
+    #remove all extra columns that were added to hot encode with all possible months/days
+    encoded_cleaned = encoded_data.iloc[:-19]
+
     #create model to predict type of activity
-    model, X_test, y_test, cross_val = create_model(encoded_data)
+    model, X_test, y_test, cross_val = create_model(encoded_cleaned)
     proportion_error, matrix, f1  = analyze_activitymodel(model, X_test, y_test)
 
     #create model to predict distance and elevation
-    model_met, X_test_met, y_test_met, cross_val_met = create_metrics_model(encoded_data)
+    model_met, X_test_met, y_test_met, cross_val_met = create_metrics_model(encoded_cleaned)
     actual_results_met, predicted_results_met, error_met= get_error(model_met, X_test_met, y_test_met)
 
     #get current time and create dataframe in same format as gdf to be inserted into hot_encode
-    #predict activity using created df with model
+    today = datetime.datetime.now()
+    day = today.weekday()
+    time_of_day = datetime.timedelta(hours=today.hour, minutes=today.minute,seconds=today.second).total_seconds()
+    month = today.month
+    current_df = pd.DataFrame([[day, time_of_day, month]],columns=['day', 'time_of_day','month'])
+
+    #add all days/months to get all possible columns when hot encoding
+    current_all = add_all_daysmonths(current_df)
+    current_encoded = hot_encode(current_all)
+    #remove all excess columns used for hot encode
+    current_cleaned = current_encoded.iloc[:-19]
+    
+    #predict current activity
+    predicted_activity = model.predict(current_cleaned)
+    
+    #predict distance and elevation
+    current_cleaned['activity'] = predicted_activity
+
+    #add all possible activities for use in hot encoding
+    all_activities = add_all_activities(current_cleaned)
+
+    dummy_activity = pd.get_dummies(all_activities,columns=['activity'])
+    activity_cleaned = dummy_activity.iloc[:-2]
+
     #predict metrics using same data with model_met
+    predicted_metrics = model_met.predict(activity_cleaned)
+    print(predicted_metrics)
+
+    #^^^you need to add dummy activity variables outside of the training formula so that this will work
 
 
 #Find random route that matches type, length and elevation +/- 10%

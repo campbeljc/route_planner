@@ -28,17 +28,26 @@ def split_time(df):
     df['day'] = [x.weekday() for x in df['datetime']]
     #Find seconds since midnight for every row
     df['time_of_day'] = [datetime.timedelta(hours=t.hour, minutes=t.minute,seconds=t.second).total_seconds() for t in df['datetime']]
-    # average_tod = df['time_of_day'].mean()
-    # df['time_of_day'] = df['time_of_day']/average_tod
     #Find month
     df['month'] = [x.month for x in df['datetime']]
+    df = df.drop(columns='time')
     return df
 
+def add_all_daysmonths(df):
+    num_columns = len(df.columns)
+    blank_series = pd.Series((np.nan for x in np.arange(num_columns)),index=df.columns)
+    for month in np.arange(1,13):
+        blank_series['month'] = month
+        df = df.append(blank_series, ignore_index=True)
+    for day in np.arange(1,8):
+        blank_series['day'] = day
+        df = df.append(blank_series, ignore_index=True)
+    return df
+
+
 def hot_encode(df):
-    #get all time variables formatted and drop excess columns
-    df_time = split_time(df).drop(columns='time')
     #get dummy variables for day column
-    df_dummy_time = pd.get_dummies(df_time,columns=['day'])
+    df_dummy_time = pd.get_dummies(df,columns=['day'])
     #get dummy variables for month
     df_dummy = pd.get_dummies(df_dummy_time,columns=['month'])
     return df_dummy
@@ -73,6 +82,14 @@ def analyze_activitymodel(model, X_test, y_test):
 
 
 # proportion_error, matrix, f1  = analyze_activitymodel(model, X_test, y_test)
+
+def add_all_activities(df):
+    num_columns = len(df.columns)
+    blank_series = pd.Series((np.nan for x in np.arange(num_columns)),index=df.columns)
+    for activity in np.array(['1','9']):
+        blank_series['activity'] = activity
+        df = df.append(blank_series, ignore_index=True)
+    return df
 
 def create_metrics_model(df):
     df_dummy = pd.get_dummies(df,columns=['activity'])
