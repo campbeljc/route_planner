@@ -86,12 +86,14 @@ def analyze_activitymodel(model, X_test, y_test):
 def add_all_activities(df):
     num_columns = len(df.columns)
     blank_series = pd.Series((np.nan for x in np.arange(num_columns)),index=df.columns)
-    for activity in np.array(['1','9']):
-        blank_series['activity'] = activity
+    for activity in np.array([1,9]):
+        string_activity = str(activity)
+        blank_series['activity'] = string_activity
         df = df.append(blank_series, ignore_index=True)
     return df
 
 def create_metrics_model(df):
+    df['activity'] = df['activity'].astype(float)
     df_dummy = pd.get_dummies(df,columns=['activity'])
     X = df_dummy.drop(['elevation','distance','datetime','geometry'],axis=1)
     y = df_dummy[['distance','elevation']]

@@ -113,10 +113,12 @@ if predict == 'yes' or predict == 'Yes':
     predicted_activity = model.predict(current_cleaned)
     
     #predict distance and elevation
-    current_cleaned['activity'] = predicted_activity
+    current_cleaned['activity'] = float(predicted_activity[0])
+    # print(predicted_activity[0])
 
     #add all possible activities for use in hot encoding
     all_activities = add_all_activities(current_cleaned)
+    # print(all_activities['activity'])
 
     dummy_activity = pd.get_dummies(all_activities,columns=['activity'])
     activity_cleaned = dummy_activity.iloc[:-2]
@@ -124,9 +126,6 @@ if predict == 'yes' or predict == 'Yes':
     #predict metrics using same data with model_met
     predicted_metrics = model_met.predict(activity_cleaned)
     print(predicted_metrics)
-
-    #^^^you need to add dummy activity variables outside of the training formula so that this will work
-
 
 #Find random route that matches type, length and elevation +/- 10%
 
