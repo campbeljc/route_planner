@@ -8,7 +8,8 @@ import os
 import datetime
 
 from load_gpxfile import create_df
-from predict_route import create_model, hot_encode, analyze_activitymodel, create_metrics_model, get_error, split_time, add_all_daysmonths, add_all_activities
+from support_functions import hot_encode, split_time, add_all_daysmonths, add_all_activities
+from neighbors_classifier import create_model, create_metrics_model
 
 ##Outline
 #Initializing
@@ -88,13 +89,18 @@ if predict == 'yes' or predict == 'Yes':
     #remove all extra columns that were added to hot encode with all possible months/days
     encoded_cleaned = encoded_data.iloc[:-19]
 
+    #create model to predict activity using encoded_cleaned data
+    #create model to predict distance and elevation using encoded_cleaned data with predicted activity added
+
     #create model to predict type of activity
-    model, X_test, y_test, cross_val = create_model(encoded_cleaned)
-    proportion_error, matrix, f1  = analyze_activitymodel(model, X_test, y_test)
+    model = create_model(encoded_cleaned)
+
+    #get dummies for activity
+    encoded_cleaned['activity'] = encoded_cleaned['activity'].astype(float)
+    encoded_activity = pd.get_dummies(encoded_cleaned,columns=['activity'])
 
     #create model to predict distance and elevation
-    model_met, X_test_met, y_test_met, cross_val_met = create_metrics_model(encoded_cleaned)
-    actual_results_met, predicted_results_met, error_met= get_error(model_met, X_test_met, y_test_met)
+    model_met = create_metrics_model(encoded_activity)
 
     #get current time and create dataframe in same format as gdf to be inserted into hot_encode
     today = datetime.datetime.now()
@@ -111,14 +117,13 @@ if predict == 'yes' or predict == 'Yes':
     
     #predict current activity
     predicted_activity = model.predict(current_cleaned)
+    print(predicted_activity)
     
     #predict distance and elevation
     current_cleaned['activity'] = float(predicted_activity[0])
-    # print(predicted_activity[0])
 
     #add all possible activities for use in hot encoding
     all_activities = add_all_activities(current_cleaned)
-    # print(all_activities['activity'])
 
     dummy_activity = pd.get_dummies(all_activities,columns=['activity'])
     activity_cleaned = dummy_activity.iloc[:-2]
@@ -127,7 +132,12 @@ if predict == 'yes' or predict == 'Yes':
     predicted_metrics = model_met.predict(activity_cleaned)
     print(predicted_metrics)
 
-#Find random route that matches type, length and elevation +/- 10%
+    #set predicted activiy and metrics to appropriate variables
+    activity = predicted_activity[0]
+    distance = predicted_metrics[0][0]
+    elevation = predicted_metrics[0][1]
+
+#Find route that is closest to given activity, elevation and distance
 
 #Map route as printout from geopandas + export shp file
 
