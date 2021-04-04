@@ -26,8 +26,18 @@ def create_metrics_model(df):
     X = df.drop(['elevation','distance','datetime','geometry'],axis=1)
     y = df[['distance','elevation']]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
-    classifier = KNeighborsRegressor(n_neighbors=4, algorithm="kd_tree")
-    model = classifier.fit(X_train, y_train)
+    regressor = KNeighborsRegressor(n_neighbors=4, algorithm="kd_tree")
+    model = regressor.fit(X_train, y_train)
     return model
 
 #function that selects nearest neighbor to select route. Chooses based off activity, elevation and distance (NearestNeighbors)
+def find_closest_route(df, activity, distance, elevation):
+    X = df[['activity','elevation','distance']]
+    neighbors = NearestNeighbors(algorithm="kd_tree")
+    neighbors.fit(X)
+    sample = np.array([activity, distance, elevation]).reshape(1,-1)
+    index = neighbors.kneighbors(sample, n_neighbors=1, return_distance=False)
+
+    series = df.iloc[index[0]]
+
+    return series

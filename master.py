@@ -6,10 +6,13 @@ from tkinter import filedialog
 import sys
 import os
 import datetime
+import matplotlib.pyplot as plt
+import contextily as ctx
+import fiona
 
 from load_gpxfile import create_df
 from support_functions import hot_encode, split_time, add_all_daysmonths, add_all_activities
-from neighbors_classifier import create_model, create_metrics_model
+from neighbors_classifier import create_model, create_metrics_model, find_closest_route
 
 ##Outline
 #Initializing
@@ -117,7 +120,6 @@ if predict == 'yes' or predict == 'Yes':
     
     #predict current activity
     predicted_activity = model.predict(current_cleaned)
-    print(predicted_activity)
     
     #predict distance and elevation
     current_cleaned['activity'] = float(predicted_activity[0])
@@ -130,15 +132,38 @@ if predict == 'yes' or predict == 'Yes':
 
     #predict metrics using same data with model_met
     predicted_metrics = model_met.predict(activity_cleaned)
-    print(predicted_metrics)
 
     #set predicted activiy and metrics to appropriate variables
     activity = predicted_activity[0]
     distance = predicted_metrics[0][0]
     elevation = predicted_metrics[0][1]
 
-#Find route that is closest to given activity, elevation and distance
+#Find route that is closest to given activity, elevation and distance. Returns series with route info including geometry
+route = find_closest_route(gdf, activity, distance, elevation)
+route = route.to_crs(3857)
+route = route.set_crs('epsg:3857')
 
-#Map route as printout from geopandas + export shp file
+minx, miny, maxx, maxy = route.geometry.total_bounds
+
+#Map route as printout from geopandas
+
+fig, ax = plt.subplots(1, 1)
+# world.plot(ax=ax)
+route.plot(ax=ax, column='elevation')
+
+ax.set_xlim(minx - 200, maxx + 200)
+ax.set_ylim(miny - 200, maxy + 200)
+
+ctx.add_basemap(ax, source=ctx.providers.OpenTopoMap)
+
+plt.show()
+
+#Export file as kml file
+fiona.supported_drivers['KML'] = 'rw'
+route.to_file('test.kml', driver='KML')
 
 #Potential Bonus: overlay on google maps
+
+#TODO
+#1. Fix indexing bug
+#2. Add some sort of accuracy check to learning algorithms and adjust to maximize this metric
