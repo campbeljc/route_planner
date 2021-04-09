@@ -32,12 +32,11 @@ def create_metrics_model(df):
 
 #function that selects nearest neighbor to select route. Chooses based off activity, elevation and distance (NearestNeighbors)
 def find_closest_route(df, activity, distance, elevation):
-    X = df[['activity','elevation','distance']]
+    X = df[['activity','elevation','distance']].astype(np.float64)
     neighbors = NearestNeighbors(algorithm="kd_tree")
     neighbors.fit(X)
     sample = np.array([activity, distance, elevation]).reshape(1,-1)
     index = neighbors.kneighbors(sample, n_neighbors=1, return_distance=False)
-
     series = df.iloc[index[0]]
 
     return series

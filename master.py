@@ -92,14 +92,18 @@ if predict == 'yes' or predict == 'Yes':
     #remove all extra columns that were added to hot encode with all possible months/days
     encoded_cleaned = encoded_data.iloc[:-19]
 
+
     #create model to predict activity using encoded_cleaned data
     #create model to predict distance and elevation using encoded_cleaned data with predicted activity added
-
     #create model to predict type of activity
     model = create_model(encoded_cleaned)
-
     #get dummies for activity
-    encoded_cleaned['activity'] = encoded_cleaned['activity'].astype(float)
+
+    # encoded_cleaned['activity'] = encoded_cleaned['activity'].astype(np.float64)
+    pd.set_option('mode.chained_assignment',None)
+    encoded_cleaned.loc[:,'activity'] = encoded_cleaned['activity'].astype(np.float64)
+    #^^ this line causes the SettingwithCopyWarning
+
     encoded_activity = pd.get_dummies(encoded_cleaned,columns=['activity'])
 
     #create model to predict distance and elevation
@@ -116,7 +120,7 @@ if predict == 'yes' or predict == 'Yes':
     current_all = add_all_daysmonths(current_df)
     current_encoded = hot_encode(current_all)
     #remove all excess columns used for hot encode
-    current_cleaned = current_encoded.iloc[:-19]
+    current_cleaned = current_encoded.iloc[:-19].astype(np.float64)
     
     #predict current activity
     predicted_activity = model.predict(current_cleaned)
@@ -128,7 +132,7 @@ if predict == 'yes' or predict == 'Yes':
     all_activities = add_all_activities(current_cleaned)
 
     dummy_activity = pd.get_dummies(all_activities,columns=['activity'])
-    activity_cleaned = dummy_activity.iloc[:-2]
+    activity_cleaned = dummy_activity.iloc[:-2].astype(np.float64)
 
     #predict metrics using same data with model_met
     predicted_metrics = model_met.predict(activity_cleaned)
@@ -154,9 +158,9 @@ route.plot(ax=ax, column='elevation')
 ax.set_xlim(minx - 200, maxx + 200)
 ax.set_ylim(miny - 200, maxy + 200)
 
-ctx.add_basemap(ax, source=ctx.providers.OpenTopoMap)
+ctx.add_basemap(ax, source=ctx.providers.OpenStreetMap.Mapnik)
 
-plt.show()
+# plt.show()
 
 #Export file as kml file
 fiona.supported_drivers['KML'] = 'rw'
@@ -165,5 +169,5 @@ route.to_file('test.kml', driver='KML')
 #Potential Bonus: overlay on google maps
 
 #TODO
-#1. Fix indexing bug
+#1. Save file and image to folder entitled "suggested routes" in strava route data
 #2. Add some sort of accuracy check to learning algorithms and adjust to maximize this metric
