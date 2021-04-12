@@ -184,5 +184,5 @@ route.to_file(output_path, driver='KML')
 #Potential Bonus: overlay on google maps
 
 #TODO
-#1. adjust learning algorithm to optimize f1 and r2 (do this with full data)
-#2. adjust so testing is removed
+#0.5. Test algorthm with current data and Mariya's data
+#1. adjust so testing is removed

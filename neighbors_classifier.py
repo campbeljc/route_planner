@@ -15,7 +15,7 @@ def create_model(df):
     #create training and test sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
     #create model
-    classifier = KNeighborsClassifier(n_neighbors=4, algorithm="kd_tree")
+    classifier = KNeighborsClassifier(n_neighbors=3, weights="distance", algorithm="kd_tree")
     #to fine tune algorithm use algorithm = "BallTree" or "brute"
     model = classifier.fit(X_train, y_train)
     return model, X_test, y_test
@@ -27,7 +27,7 @@ def create_metrics_model(df):
     X = df.drop(['elevation','distance','datetime','geometry'],axis=1)
     y = df[['distance','elevation']]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
-    regressor = KNeighborsRegressor(n_neighbors=4, algorithm="kd_tree")
+    regressor = KNeighborsRegressor(n_neighbors=6, weights="uniform", algorithm="kd_tree")
     model = regressor.fit(X_train, y_train)
     r_squared = regressor.score(X_test, y_test)
     return model, r_squared
