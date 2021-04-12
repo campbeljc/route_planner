@@ -2,6 +2,7 @@ import geopandas as gpd
 import numpy as np  
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor, NearestNeighbors
+from sklearn.metrics import f1_score
 
 #Load in test dataset
 gdf = gpd.read_file('my_gdf.json')
@@ -17,7 +18,7 @@ def create_model(df):
     classifier = KNeighborsClassifier(n_neighbors=4, algorithm="kd_tree")
     #to fine tune algorithm use algorithm = "BallTree" or "brute"
     model = classifier.fit(X_train, y_train)
-    return model
+    return model, X_test, y_test
 
 
 #funciton that predicts distance based on nearest neighbors (KNeighborsRegressor)
@@ -28,7 +29,8 @@ def create_metrics_model(df):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
     regressor = KNeighborsRegressor(n_neighbors=4, algorithm="kd_tree")
     model = regressor.fit(X_train, y_train)
-    return model
+    r_squared = regressor.score(X_test, y_test)
+    return model, r_squared
 
 #function that selects nearest neighbor to select route. Chooses based off activity, elevation and distance (NearestNeighbors)
 def find_closest_route(df, activity, distance, elevation):
@@ -40,3 +42,10 @@ def find_closest_route(df, activity, distance, elevation):
     series = df.iloc[index[0]]
 
     return series
+
+#function that calculates the F1 score of the model
+def find_f1(model, x_test, y_test):
+    predicted_values = x_test.apply(lambda a: model.predict(np.array(a).reshape(1,-1))[0], axis = 1)
+    predicted_array = predicted_values.array
+    f1 = f1_score(y_test,predicted_array, average="micro")
+    return f1

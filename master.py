@@ -12,7 +12,7 @@ import fiona
 
 from load_gpxfile import create_df
 from support_functions import hot_encode, split_time, add_all_daysmonths, add_all_activities
-from neighbors_classifier import create_model, create_metrics_model, find_closest_route
+from neighbors_classifier import create_model, create_metrics_model, find_closest_route, find_f1
 
 ##Outline
 #Initializing
@@ -22,7 +22,7 @@ from neighbors_classifier import create_model, create_metrics_model, find_closes
 # If not predicting route ask for type of route and length. If bike ask for elevation
 testing=sys.argv[1]
 if testing == "True":
-    file_path = "/Users/jennacampbell/Desktop/export_42781014/activities"
+    file_path = "/Users/jennacampbell/Desktop/export_42781014"
     activity = "Bike"
     distance = 30
     elevation = 2000
@@ -60,13 +60,18 @@ else:
     root.withdraw()
 
     file_path = filedialog.askdirectory()
-    file_path = os.path.join(file_path, "activities")
+    
+activities_path = os.path.join(file_path, "activities")
+
+output_dir = os.path.join(file_path, "suggested_routes")
+if not os.path.isdir(output_dir):
+    os.mkdir(output_dir)
 
 if testing == "True":
     gdf = gpd.read_file('test_file.json')
 else:
     #Create GeoDataFrame out of DataFrame
-    df = create_df(file_path)
+    df = create_df(activities_path)
 
     gdf = gpd.GeoDataFrame(df, crs='epsg:4326', geometry=df['coordinates'])
     gdf = gdf.drop(['coordinates'],axis=1)
@@ -96,7 +101,12 @@ if predict == 'yes' or predict == 'Yes':
     #create model to predict activity using encoded_cleaned data
     #create model to predict distance and elevation using encoded_cleaned data with predicted activity added
     #create model to predict type of activity
-    model = create_model(encoded_cleaned)
+    model, X_test, y_test = create_model(encoded_cleaned)
+
+    #find f1 value
+    f1 = find_f1(model, X_test, y_test)
+    print(f1)
+
     #get dummies for activity
 
     # encoded_cleaned['activity'] = encoded_cleaned['activity'].astype(np.float64)
@@ -107,7 +117,8 @@ if predict == 'yes' or predict == 'Yes':
     encoded_activity = pd.get_dummies(encoded_cleaned,columns=['activity'])
 
     #create model to predict distance and elevation
-    model_met = create_metrics_model(encoded_activity)
+    model_met, r_squared = create_metrics_model(encoded_activity)
+    print(r_squared)
 
     #get current time and create dataframe in same format as gdf to be inserted into hot_encode
     today = datetime.datetime.now()
@@ -164,10 +175,14 @@ ctx.add_basemap(ax, source=ctx.providers.OpenStreetMap.Mapnik)
 
 #Export file as kml file
 fiona.supported_drivers['KML'] = 'rw'
-route.to_file('test.kml', driver='KML')
+
+date = today.date()
+file_name = "activity_{}.kml".format(date)
+output_path = os.path.join(file_path, "suggested_routes", file_name)
+route.to_file(output_path, driver='KML')
 
 #Potential Bonus: overlay on google maps
 
 #TODO
-#1. Save file and image to folder entitled "suggested routes" in strava route data
-#2. Add some sort of accuracy check to learning algorithms and adjust to maximize this metric
+#1. adjust learning algorithm to optimize f1 and r2 (do this with full data)
+#2. adjust so testing is removed
